@@ -1,0 +1,61 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    shift4.charges_url: '%env(string:SHIFT4_CHARGES_URL)%'
+    shift4.auth_key: '%env(string:SHIFT4_AUTH_KEY)%'
+    shift4.mid: '%env(string:SHIFT4_MID)%'
+
+    aci.payments_url: '%env(string:ACI_PAYMENTS_URL)%'
+    aci.auth_key: '%env(string:ACI_AUTH_KEY)%'
+    aci.entity_id: '%env(string:ACI_ENTITY_ID)%'
+    aci.payment_brand: '%env(string:ACI_PAYMENT_BRAND)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Controllers
+    App\Controller\:
+        resource: '../src/Controller'
+        tags: ['controller.service_arguments']
+
+    # Adapters
+    App\Payment\Adapter\Shift4Adapter:
+        tags: ['payment.adapter']
+        arguments:
+            $authKey: '%shift4.auth_key%'
+            $mid: '%shift4.mid%'
+            $endpointUrl: '%shift4.charges_url%'
+
+    App\Payment\Adapter\AciAdapter:
+        tags: ['payment.adapter']
+        arguments:
+            $authKey: '%aci.auth_key%'
+            $entityId: '%aci.entity_id%'
+            $paymentBrand: '%aci.payment_brand%'
+            $endpointUrl: '%aci.payments_url%'
+
+    # Mappers
+    App\Payment\Mapper\:
+        resource: '../src/Payment/Mapper/*'
+
+    # Wire PaymentService with the tagged adapters
+    App\Payment\Service\PaymentService:
+        arguments:
+            $adapters: !tagged_iterator payment.adapter
+
+    # Everything else (excluding controllers & adapters so we don’t override)
+    App\:
+        resource: '../src/*'
+        exclude:
+            - '../src/Controller'
+            - '../src/Payment/Adapter'
+            - '../src/Payment/Service'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones

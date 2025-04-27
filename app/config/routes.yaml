@@ -1,0 +1,10 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+
+payment_api:
+    path: /api/payment/{provider}
+    controller: App\Controller\PaymentController
+    methods: [ POST ]

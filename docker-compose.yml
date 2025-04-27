@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        UID: ${UID}
+        GID: ${GID}
+    volumes:
+      - ./app:/app
+    ports:
+      - "8000:8000"
