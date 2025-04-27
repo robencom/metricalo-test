@@ -90,6 +90,21 @@ A Symfony 6.4 test project (for Metricalo) demonstrating a unified response card
 
 ---
 
+## API Documentation (Swagger UI + OpenAPI JSON)
+- **Generate or refresh the spec**:
+  ```bash
+  composer openapi:generate
+  ```
+This command scans `src/` for `#[OA\…]` attributes and writes public/openapi.json.
+
+- **View the docs**:
+    - Interactive HTML (Swagger UI): http://localhost:8000/docs/
+    - Raw OpenAPI 3 JSON: http://localhost:8000/openapi.json
+
+- **Keep the spec current**:
+    - Run `composer openapi:generate` whenever you change controllers or DTOs.
+    - For CI pipelines, run the same script after tests to ensure openapi.json stays in sync.
+
 ## Project Structure
 
 ```
@@ -108,4 +123,3 @@ A Symfony 6.4 test project (for Metricalo) demonstrating a unified response card
 ```
 
 ---
-

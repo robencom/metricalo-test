@@ -41,26 +41,47 @@ class Shift4Adapter implements PaymentAdapterInterface, LoggerAwareInterface
     {
         $minorAmount = (int) round($request->amount * 100);
 
-        $response = $this->http->request('POST', $this->endpointUrl, [
-            'auth_basic' => [$this->authKey, ''],
-            'json' => [
-                'amount' => $minorAmount,
-                'currency' => $request->currency,
-                'merchantAccountId' => $this->mid,
-                'card' => [
-                    'number' => $request->cardNumber,
-                    'expMonth' => $request->cardExpMonth,
-                    'expYear' => $request->cardExpYear,
-                    'cvc' => $request->cardCvv,
+        try {
+            $response = $this->http->request('POST', $this->endpointUrl, [
+                'auth_basic' => [$this->authKey, ''],
+                'json' => [
+                    'amount' => $minorAmount,
+                    'currency' => $request->currency,
+                    'merchantAccountId' => $this->mid,
+                    'card' => [
+                        'number' => $request->cardNumber,
+                        'expMonth' => $request->cardExpMonth,
+                        'expYear' => $request->cardExpYear,
+                        'cvc' => $request->cardCvv,
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('HTTP error contacting Shift4', [
+                'exception' => $e->getMessage(),
+            ]);
+            throw new PaymentException('Payment gateway unavailable, please try again later');
+        }
 
-        if (Response::HTTP_OK !== $response->getStatusCode()) {
+        $status = $response->getStatusCode();
+
+        if ($status === 429) {
+            throw new PaymentException('Rate limit exceeded, please wait before retrying');
+        }
+
+        if (Response::HTTP_OK !== $status) {
             $this->logger->error('Gateway error', [
                 'gateway' => 'shift4',
-                'status' => $response->getStatusCode(),
-                'body' => $response->getContent(false),
+                'status' => $status,
+                'request' => [
+                    'amount' => $minorAmount,
+                    'currency' => $request->currency,
+                    'card' => [
+                        'number' => '****'.substr($request->cardNumber, -4),
+                        'cvc' => '***',
+                    ],
+                ],
+                'response' => $response->getContent(false),
             ]);
             throw new PaymentException('Shift4 declined the transaction');
         }

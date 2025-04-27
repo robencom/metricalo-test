@@ -1,0 +1,154 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Payment API",
+        "description": "Simple endpoint that forwards card payments to Shift4 or ACI.",
+        "version": "0.1.0"
+    },
+    "servers": [
+        {
+            "url": "/"
+        }
+    ],
+    "paths": {
+        "/api/payment/{provider}": {
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Process a one-off card payment",
+                "operationId": "processPayment",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "description": "Gateway to use (`shift4`, `aci`, …)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "shift4",
+                                "aci"
+                            ],
+                            "example": "shift4"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payment accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload"
+                    },
+                    "502": {
+                        "description": "Upstream gateway failure"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "PaymentRequest": {
+                "description": "Cardholder payment instruction",
+                "required": [
+                    "amount",
+                    "currency",
+                    "cardNumber",
+                    "cardExpMonth",
+                    "cardExpYear",
+                    "cardCvv"
+                ],
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 19.99
+                    },
+                    "currency": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "USD"
+                    },
+                    "cardNumber": {
+                        "type": "string",
+                        "format": "credit-card",
+                        "example": "4242424242424242"
+                    },
+                    "cardExpMonth": {
+                        "type": "integer",
+                        "maximum": 12,
+                        "minimum": 1,
+                        "example": 4
+                    },
+                    "cardExpYear": {
+                        "type": "integer",
+                        "example": 2028
+                    },
+                    "cardCvv": {
+                        "type": "string",
+                        "example": "123"
+                    },
+                    "cardHolderName": {
+                        "type": "string",
+                        "example": "JOHN DOE",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PaymentResponse": {
+                "description": "Unified acquirer response",
+                "properties": {
+                    "transactionId": {
+                        "type": "string",
+                        "example": "tr_5Xz9aXDN"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-04-27T10:34:12Z"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 199.99
+                    },
+                    "currency": {
+                        "type": "string",
+                        "example": "USD"
+                    },
+                    "cardBin": {
+                        "type": "string",
+                        "example": "424242"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Payments",
+            "description": "Payments"
+        }
+    ]
+}

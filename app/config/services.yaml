@@ -18,6 +18,20 @@ services:
         autowire: true
         autoconfigure: true
 
+    # define a strategy that retries on common transient HTTP codes:
+    App\Payment\HttpClient\Retry\PaymentRetryStrategy:
+        class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
+        arguments:
+            - [429, 502, 503, 504] # status codes to retry
+
+    # wire RetryableHttpClient with the real http_client and that strategy:
+    App\Payment\HttpClient\RetryableClient:
+        class: Symfony\Component\HttpClient\RetryableHttpClient
+        arguments:
+            - '@http_client' # decorated client
+            - '@App\Payment\HttpClient\Retry\PaymentRetryStrategy' # retry strategy
+            - 3  # max retries
+
     # Controllers
     App\Controller\:
         resource: '../src/Controller'
@@ -27,6 +41,7 @@ services:
     App\Payment\Adapter\Shift4Adapter:
         tags: ['payment.adapter']
         arguments:
+            $http: '@App\Payment\HttpClient\RetryableClient'
             $authKey: '%shift4.auth_key%'
             $mid: '%shift4.mid%'
             $endpointUrl: '%shift4.charges_url%'
@@ -34,6 +49,7 @@ services:
     App\Payment\Adapter\AciAdapter:
         tags: ['payment.adapter']
         arguments:
+            $http: '@App\Payment\HttpClient\RetryableClient'
             $authKey: '%aci.auth_key%'
             $entityId: '%aci.entity_id%'
             $paymentBrand: '%aci.payment_brand%'
